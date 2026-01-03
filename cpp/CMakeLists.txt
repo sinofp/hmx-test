@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(TechTest)
 
 # Default to C++17, but candidates may change to 20 or 23 if preferred
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Models library
 # Make Models a static library so translation-unit implementations

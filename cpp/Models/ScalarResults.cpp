@@ -36,22 +36,75 @@ void ScalarResults::addError(const std::string& tradeId, const std::string& erro
     errors_[tradeId] = error;
 }
 
+ScalarResults::Iterator::Iterator(const ScalarResults* parent,
+                                  std::map<std::string, double>::const_iterator resultsIt,
+                                  std::map<std::string, std::string>::const_iterator errorsIt,
+                                  bool inErrors)
+    : parent_(parent),
+      resultsIt_(resultsIt),
+      errorsIt_(errorsIt),
+      inErrors_(inErrors) {
+    if (inErrors_)
+        nextError();
+}
+
+// My strategy is to output results first, then errors for trades without results
+void ScalarResults::Iterator::nextError() {
+    while (errorsIt_ != parent_->errors_.end() &&
+           parent_->results_.find(errorsIt_->first) != parent_->results_.end()) {
+        ++errorsIt_;
+    }
+}
+
 ScalarResults::Iterator& ScalarResults::Iterator::operator++() {
-    throw std::runtime_error("Iterator not implemented");
+    if (!inErrors_) {
+        if (resultsIt_ != parent_->results_.end()) {
+            ++resultsIt_;
+        }
+        if (resultsIt_ == parent_->results_.end()) {
+            inErrors_ = true;
+            nextError();
+        }
+        return *this;
+    }
+    
+    if (errorsIt_ != parent_->errors_.end()) {
+        ++errorsIt_;
+        nextError();
+    }
+    return *this;
 }
 
 ScalarResult ScalarResults::Iterator::operator*() const {
-    throw std::runtime_error("Iterator not implemented");
+    if (!inErrors_) {
+        if (resultsIt_ == parent_->results_.end()) {
+            throw std::runtime_error("Iterator dereferenced at invalid position");
+        }
+        auto result = (*parent_)[resultsIt_->first];
+        if (!result.has_value()) {
+            throw std::runtime_error("Iterator dereferenced at invalid position");
+        }
+        return result.value();
+    }
+
+    if (errorsIt_ == parent_->errors_.end()) {
+        throw std::runtime_error("Iterator dereferenced at invalid position");
+    }
+    auto result = (*parent_)[errorsIt_->first];
+    if (!result.has_value()) {
+        throw std::runtime_error("Iterator dereferenced at invalid position");
+    }
+    return result.value();
 }
 
 bool ScalarResults::Iterator::operator!=(const Iterator& other) const {
-    throw std::runtime_error("Iterator not implemented");
+    return resultsIt_ != other.resultsIt_ || errorsIt_ != other.errorsIt_;
 }
 
 ScalarResults::Iterator ScalarResults::begin() const {
-    throw std::runtime_error("Not implemented");
+    return Iterator(this, results_.begin(), errors_.begin(), results_.empty());
 }
 
 ScalarResults::Iterator ScalarResults::end() const {
-    throw std::runtime_error("Not implemented");
+    return Iterator(this, results_.end(), errors_.end(), true);
 }

@@ -9,5 +9,13 @@ void ScreenResultPrinter::printResults(ScalarResults& results) {
         // TradeID : Error
         // If there is no error the output should be:
         // TradeID : Result
+        auto res = result.getResult();
+        auto err = result.getError();
+        if (res.has_value() and err.has_value())
+            std::cout << result.getTradeId() << " : " << *res << " : " << *err << std::endl;
+        else if (res.has_value())
+            std::cout << result.getTradeId() << " : " << *res << std::endl;
+        else if (err.has_value())
+            std::cout << result.getTradeId() << " : " << *err << std::endl;
     }
 }
